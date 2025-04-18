@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Window Washing Appointment Scheduler</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        #chat-container { width: 400px; margin: 50px auto; border: 1px solid #ccc; background: #fff; padding: 10px; border-radius: 5px; }
+        #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+        .message { margin: 10px 0; }
+        .user { color: blue; }
+        .bot { color: green; }
+        #user-input { width: calc(100% - 70px); padding: 10px; }
+        #send-button { padding: 10px 15px; }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <h2>Schedule Your Window Washing Appointment</h2>
+        <div id="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Type your message here...">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        // Append chat messages to the chat box
+        function appendMessage(sender, text) {
+            const chatBox = document.getElementById("chat-box");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = "message " + sender;
+            messageDiv.textContent = sender.toUpperCase() + ": " + text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Send a message to the backend /chat endpoint
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value;
+            if (!message.trim()) return;
+            appendMessage("user", message);
+            input.value = "";
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                appendMessage("bot", data.response);
+
+                // Optionally display the current schedule received from the backend
+                if (data.schedule) {
+                    let scheduleText = "Current appointments:\n";
+                    data.schedule.forEach(item => {
+                        scheduleText += `${item.date} ${item.time}: ${item.name}\n`;
+                    });
+                    appendMessage("bot", scheduleText);
+                }
+            } catch (err) {
+                appendMessage("bot", "There was an error processing your request.");
+            }
+        }
+
+        // Event listener for the Send button
+        document.getElementById("send-button").addEventListener("click", sendMessage);
+
+        // Allow sending message using the Enter key
+        document.getElementById("user-input").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
